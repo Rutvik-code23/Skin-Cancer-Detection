@@ -44,7 +44,7 @@ transform = transforms.Compose([
 
 # Sidebar
 st.sidebar.header("Settings & Options")
-show_heatmap = st.sidebar.checkbox("Show saliency heatmap (explainability)", value=True)
+show_heatmap = st.sidebar.checkbox("Show saliency heatmap (explainability)", value=False)
 use_camera = st.sidebar.checkbox("Use camera input (if available)", value=False)
 
 st.sidebar.markdown("---")
@@ -93,7 +93,7 @@ st.subheader(f"File: {fname}")
 
 colA, colB = st.columns([1, 1])
 with colA:
-    st.image(display_img, caption="Input Image", use_container_width=True)
+    st.image(display_img, caption="Input Image", width="stretch")
 
 # Prediction
 img_tensor = transform(pil_img).unsqueeze(0).to(device)
