@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+sqlalchemy
+pydantic
+python-multipart
+torch
+torchvision
+transformers
+pillow
+numpy
