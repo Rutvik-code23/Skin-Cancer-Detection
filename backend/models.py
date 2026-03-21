@@ -18,6 +18,7 @@ class Patient(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     scans = relationship("Scan", back_populates="patient", cascade="all, delete-orphan")
+    reports = relationship("Report", back_populates="patient", cascade="all, delete-orphan")
 
 class Scan(Base):
     __tablename__ = "scans"
@@ -31,3 +32,15 @@ class Scan(Base):
     scan_date = Column(DateTime(timezone=True), server_default=func.now())
 
     patient = relationship("Patient", back_populates="scans")
+
+class Report(Base):
+    __tablename__ = "reports"
+
+    id = Column(Integer, primary_key=True, index=True)
+    patient_id = Column(Integer, ForeignKey("patients.id", ondelete="CASCADE"), nullable=False)
+    scan_id = Column(Integer, ForeignKey("scans.id", ondelete="SET NULL"), nullable=True)
+    doctor_notes = Column(String)
+    pdf_path = Column(String, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    patient = relationship("Patient", back_populates="reports")

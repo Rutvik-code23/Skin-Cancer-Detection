@@ -20,6 +20,22 @@ class ScanOut(ScanBase):
     class Config:
         from_attributes = True
 
+class ReportBase(BaseModel):
+    doctor_notes: Optional[str] = None
+
+class ReportCreate(ReportBase):
+    patient_id: int
+    scan_id: Optional[int] = None
+
+class ReportOut(ReportBase):
+    id: int
+    patient_id: int
+    scan_id: Optional[int] = None
+    pdf_path: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
 class PatientBase(BaseModel):
     name: str
     age: Optional[int] = None
@@ -36,6 +52,7 @@ class PatientOut(PatientBase):
     id: int
     created_at: datetime
     scans: List[ScanOut] = []
+    reports: List[ReportOut] = []
 
     class Config:
         from_attributes = True

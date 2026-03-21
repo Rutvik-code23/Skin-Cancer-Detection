@@ -8,3 +8,4 @@ torchvision
 transformers
 pillow
 numpy
+fpdf2

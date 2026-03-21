@@ -12,6 +12,13 @@ interface Scan {
   scan_date: string;
 }
 
+interface Report {
+  id: number;
+  pdf_path: string;
+  created_at: string;
+  doctor_notes: string;
+}
+
 interface Patient {
   id: number;
   name: string;
@@ -23,6 +30,7 @@ interface Patient {
   notes: string;
   created_at: string;
   scans: Scan[];
+  reports: Report[];
 }
 
 export function PatientRecord() {
@@ -30,6 +38,7 @@ export function PatientRecord() {
   const navigate = useNavigate();
   const [patient, setPatient] = useState<Patient | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [activeTab, setActiveTab] = useState<"scans" | "reports">("scans");
 
   useEffect(() => {
     if (id) {
@@ -173,21 +182,24 @@ export function PatientRecord() {
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="border-b border-gray-200">
           <div className="flex">
-            <button className="px-6 py-4 border-b-2 transition-colors" style={{ borderColor: "#0077b6", color: "#0077b6" }}>
+            <button 
+              onClick={() => setActiveTab("scans")}
+              className={`px-6 py-4 border-b-2 transition-colors ${activeTab === "scans" ? "border-[#0077b6] text-[#0077b6]" : "border-transparent text-gray-600 hover:text-gray-900"}`}
+            >
               Past Scans
             </button>
-            <button className="px-6 py-4 border-b-2 border-transparent text-gray-600 hover:text-gray-900 transition-colors">
+            <button 
+              onClick={() => setActiveTab("reports")}
+              className={`px-6 py-4 border-b-2 transition-colors ${activeTab === "reports" ? "border-[#0077b6] text-[#0077b6]" : "border-transparent text-gray-600 hover:text-gray-900"}`}
+            >
               Reports History
-            </button>
-            <button className="px-6 py-4 border-b-2 border-transparent text-gray-600 hover:text-gray-900 transition-colors">
-              Appointment History
             </button>
           </div>
         </div>
 
-        {/* Past Scans Table */}
-        <div className="p-6">
-          <h3 className="mb-4">Past Scans</h3>
+        {activeTab === "scans" && (
+          <div className="p-6">
+            <h3 className="mb-4">Past Scans</h3>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-[#caf0f8]">
@@ -248,10 +260,65 @@ export function PatientRecord() {
                     </td>
                   </tr>
                 ))}
+                {(!patient.scans || patient.scans.length === 0) && (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
+                      No scans available.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
         </div>
+        )}
+
+        {/* Reports History Table */}
+        {activeTab === "reports" && (
+          <div className="p-6">
+            <h3 className="mb-4">Reports History</h3>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-[#caf0f8]">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-gray-700">Date Generated</th>
+                    <th className="px-6 py-3 text-left text-gray-700">Doctor Notes</th>
+                    <th className="px-6 py-3 text-left text-gray-700">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {patient.reports && patient.reports.map((report) => (
+                    <tr key={report.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 text-gray-900">
+                        {new Date(report.created_at).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 text-gray-600 max-w-md truncate">
+                        {report.doctor_notes || "No notes"}
+                      </td>
+                      <td className="px-6 py-4">
+                        <button
+                          onClick={() => window.open(`http://localhost:8000${report.pdf_path}`, "_blank")}
+                          className="px-4 py-2 rounded-lg text-white transition-all hover:opacity-90"
+                          style={{ backgroundColor: "#0077b6" }}
+                        >
+                          View PDF
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {(!patient.reports || patient.reports.length === 0) && (
+                    <tr>
+                      <td colSpan={3} className="px-6 py-4 text-center text-gray-500">
+                        No reports generated yet.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   );

@@ -5,6 +5,8 @@ from typing import List
 import os
 import shutil
 from uuid import uuid4
+from fpdf import FPDF
+from datetime import datetime
 
 import models
 import schemas
@@ -25,7 +27,9 @@ app.add_middleware(
 )
 
 UPLOAD_DIR = "uploads"
+REPORTS_DIR = os.path.join(UPLOAD_DIR, "reports")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+os.makedirs(REPORTS_DIR, exist_ok=True)
 
 # Dependency to get DB session
 def get_db():
@@ -101,6 +105,86 @@ async def upload_scan(
     db.refresh(db_scan)
 
     return db_scan
+
+@app.post("/api/reports/", response_model=schemas.ReportOut)
+def generate_report(report: schemas.ReportCreate, db: Session = Depends(get_db)):
+    # Verify patient exists
+    db_patient = db.query(models.Patient).filter(models.Patient.id == report.patient_id).first()
+    if not db_patient:
+        raise HTTPException(status_code=404, detail="Patient not found")
+
+    # Fetch scan if provided
+    scan = None
+    if report.scan_id:
+        scan = db.query(models.Scan).filter(models.Scan.id == report.scan_id, models.Scan.patient_id == report.patient_id).first()
+
+    # Create PDF Report
+    pdf = FPDF()
+    pdf.add_page()
+    
+    # Title
+    pdf.set_font("Arial", 'B', 16)
+    pdf.set_text_color(0, 119, 182) # #0077b6
+    pdf.cell(0, 10, "Skin Cancer Screening Report", ln=True, align='C')
+    pdf.set_font("Arial", '', 12)
+    pdf.set_text_color(100, 100, 100)
+    pdf.cell(0, 10, "DermAI Screening Tool - Medical Report", ln=True, align='C')
+    pdf.ln(10)
+    
+    # Patient Details
+    pdf.set_font("Arial", 'B', 14)
+    pdf.set_text_color(0, 0, 0)
+    pdf.cell(0, 10, "Patient Details", ln=True)
+    pdf.set_font("Arial", '', 12)
+    pdf.cell(0, 8, f"Name: {db_patient.name}", ln=True)
+    pdf.cell(0, 8, f"Patient ID: P-{str(db_patient.id).zfill(3)}", ln=True)
+    pdf.cell(0, 8, f"Age: {db_patient.age if db_patient.age else 'N/A'}", ln=True)
+    pdf.cell(0, 8, f"Gender: {db_patient.gender if db_patient.gender else 'N/A'}", ln=True)
+    pdf.cell(0, 8, f"Date: {datetime.now().strftime('%Y-%m-%d')}", ln=True)
+    pdf.ln(10)
+
+    # Image
+    if scan and scan.image_path:
+        pdf.set_font("Arial", 'B', 14)
+        pdf.cell(0, 10, "Uploaded Scan", ln=True)
+        # Note: image_path is like /api/uploads/filename.jpg, we need local path
+        local_img_path = scan.image_path.replace("/api/uploads/", os.path.join(UPLOAD_DIR, ""))
+        if os.path.exists(local_img_path):
+            pdf.image(local_img_path, w=100)
+        else:
+            pdf.set_font("Arial", 'I', 12)
+            pdf.cell(0, 10, "[Image File Not Found Local]", ln=True)
+        pdf.ln(10)
+    
+    # Doctor Notes
+    pdf.set_font("Arial", 'B', 14)
+    pdf.cell(0, 10, "Doctor Notes / Assessment", ln=True)
+    pdf.set_font("Arial", '', 12)
+    notes_text = report.doctor_notes if report.doctor_notes else "No specific notes provided."
+    pdf.multi_cell(0, 8, notes_text)
+
+    # Disclaimer/Footer
+    pdf.ln(20)
+    pdf.set_font("Arial", 'I', 10)
+    pdf.set_text_color(128, 128, 128)
+
+    # Save PDF
+    unique_filename = f"report_{uuid4()}.pdf"
+    file_path = os.path.join(REPORTS_DIR, unique_filename)
+    pdf.output(file_path)
+
+    # Save to DB
+    db_report = models.Report(
+        patient_id=report.patient_id,
+        scan_id=report.scan_id,
+        doctor_notes=report.doctor_notes,
+        pdf_path=f"/api/uploads/reports/{unique_filename}"
+    )
+    db.add(db_report)
+    db.commit()
+    db.refresh(db_report)
+
+    return db_report
 
 from fastapi.staticfiles import StaticFiles
 app.mount("/api/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
