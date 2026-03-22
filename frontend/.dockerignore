@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+venv/
+node_modules/
+.git
+model/
+uploads/
+notebooks/
+database/
+skin_cancer.db
