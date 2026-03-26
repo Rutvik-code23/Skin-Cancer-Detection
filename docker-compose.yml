@@ -1,8 +1,9 @@
-version: "3.9"
+# version: "3.9"
 
 services:
   backend:
-    build: ./backend
+    image: rutvikprajapati/skin-cancer-detection-backend:latest
+    # build: ./backend
     container_name: skin-backend
     ports:
       - "8000:8000"
@@ -11,7 +12,8 @@ services:
     restart: always
 
   frontend:
-    build: ./frontend
+    image: rutvikprajapati/skin-cancer-detection-frontend:latest
+    # build: ./frontend
     container_name: skin-frontend
     ports:
       - "5173:5173"
